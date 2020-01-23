@@ -1,0 +1,6 @@
+@using SRS_IN_JSON_AND_AJAX_USING_WEAPI.Areas.HelpPage.ModelDescriptions
+@model CollectionModelDescription
+@if (Model.ElementDescription is ComplexTypeModelDescription)
+{
+    @Html.DisplayFor(m => m.ElementDescription)
+}

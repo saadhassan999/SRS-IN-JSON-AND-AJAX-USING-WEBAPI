@@ -1,0 +1,208 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Course Registration View</title>
+    <link href="Stylesheet/bootstrap.min.css" rel="stylesheet" />
+    <script src="Scripts/jquery.min.js"></script>
+    <script src="Scripts/angular.min.js"></script>
+    <script src="Scripts/bootstrap.js"></script>
+    <script>
+        var app = angular.module("myApp", []);
+        app.controller("ctrl1", ["$scope", "$http", function ($scope, $http) {
+            PopulateCReg();
+            PopulateStudents();
+            PopulateCourses();
+            dateFunc();
+            function PopulateCReg() {
+                 var pop_crreg = $http({
+                    method: "get",
+                    url: "/api/CourseRegistrations"
+                });
+                pop_crreg.then(function (result) {
+                    $scope.cregtime = result.data;
+                }, function (error) {
+                    $scope.status = error;
+                    alert("failed to populate course registration records");
+                });
+            }
+            function PopulateStudents() {
+                var get = $http({
+                    method: "get",
+                    url: "/api/Students"
+                });
+                get.then(function (p2) {
+                    $scope.students = p2.data;
+                }, function (result) {
+                    console.log(result);
+                    alert("failed");
+                });
+            }
+            function PopulateCourses() {
+                var get = $http({
+                    method: "get",
+                    url: "/api/Courses"
+                });
+                get.then(function (p2) {
+                    $scope.courses = p2.data;
+                }, function (result) {
+                    console.log(result);
+                    alert("failed");
+                });
+            }
+            function dateFunc() {
+                  $scope.CurrentDate = new Date();
+            }
+            $scope.delete = function (cregId) {
+                var ans = confirm("are you sure to delete?");
+                if (ans) {
+                    var del_creg = $http({
+                        method: "delete",
+                        url: "/api/CourseRegistrations/" + cregId
+                    });
+                    del_creg.then(function () {
+                        alert("deleted successfully");
+                        PopulateCReg();
+                    }, function () {
+                        alert("deleting process failed ");
+                    });
+                }
+            }
+            $scope.AddCReg = function () {
+                var creg_data = {
+                    CourseId: $scope.crid,
+                    StudentId: $scope.stid,
+                    RegistrationTime:$scope.CurrentDate
+                };
+                debugger;
+                var save_creg = $http({
+                    method: "post",
+                    url: "/api/CourseRegistrations",
+                    data: creg_data,
+                    contentType: "application/json;charset=utf-8"
+                });
+                save_creg.then(function () {
+                    alert("successfully insert");
+                }, function (result) {
+                        console.log(result);
+                    alert("failure occured while insert");
+                });
+            }
+             $scope.editRecords = function (cregId, crId, stId, crtime) {
+                var get_crses = $http({
+                    method: "get",
+                    url: "/api/CourseRegistrations/" + cregId
+                });
+                debugger;
+                get_crses.then(function () {
+                    $("#svebtn").hide();
+                    $("#updbtn").show();
+                    $scope.cregId = cregId;
+                    $scope.crid = crId;
+                    $scope.stid = stId;
+                    $scope.CurrentDate = crtime;
+                    $("#myModal").modal("toggle");
+                });
+            }
+            $scope.updtfun = function (cregid) {
+                var creg_data = {
+                   CourseRegistrationId: $scope.cregId,
+                   CourseId: $scope.crid,
+                    StudentId: $scope.stid,
+                    RegistrationTime: $scope.CurrentDate
+                };
+                debugger;
+                var upd_creg = $http({
+                    method: "put",
+                    url: "/api/CourseRegistrations/" + cregid,
+                    data: creg_data,
+                    contentType: "application/json;charset=utf-8"
+                });
+                upd_creg.then(function () {
+                    alert("update successfully");
+                     PopulateCReg();
+                    $("#myModal").modal("toggle");
+                    $("#svebtn").show();
+                    $("#updbtn").hide();
+                })
+            }
+        }]);
+    </script>
+</head>
+<body ng-app="myApp" class="bg-info">
+    <nav class="navbar navbar-expand-xl bg-primary" style="height:70px;">
+        <a class="navbar-brand" href="StudentView.html" style="color:white; margin-left:100px;font-size:21px;margin-top:10px;">Student</a>
+        <a class="navbar-brand" href="CourseView.html" style="color:white; margin-left:20px;font-size:21px;margin-top:10px;">Course</a>
+        <a class="navbar-brand" href="CRregView.html" style="color:white; margin-left:20px;font-size:21px;margin-top:10px;">Course Registration</a>
+    </nav>
+    <div ng-controller="ctrl1">
+        <button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#myModal" style="margin-bottom:4px; margin-left:100px;">Add Course Registration</button>
+        <div class="modal fade" id="myModal" role="dialog">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        <h4 class="modal-title">Add New Course Registration</h4>
+                    </div>
+                    <form id="myform">
+                        <div class="modal-body">
+                            <div class="form-group" hidden>
+                                <label>C_Reg ID</label>
+                                <input type="text" class="form-control" ng-model="cregId" id="crid" />
+                            </div>
+                            <div class="form-group">
+                                <label>Course Id</label>
+                                <select class="form-control" ng-model="crid">
+                                    <option ng-repeat="std in courses">{{std.CourseId}}</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Student Id</label>
+                                <select class="form-control" ng-model="stid">
+                                    <option ng-repeat="std in students">{{std.StudentId}}</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Registration Time</label>
+                                <p class="form-control">{{ CurrentDate | date:'MMM d, y h:mm:ss a'}}</p>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" id="svebtn" class="btn btn-primary" ng-click="AddCReg()">Save</button>
+                            <button style="display:none;" id="updbtn" type="submit" class="btn btn-success" ng-click="updtfun(cregId)">Update</button>
+                            <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div style="margin-left:100px;padding-right: 143px;">
+            <table class="table table-borderless table-striped">
+                <thead class="bg-primary">
+                    <tr>
+                        <th>Course Id</th>
+                        <th>Student Id</th>
+                        <th>Registration Time</th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="creg in cregtime">
+                        <td hidden>{{creg.CourseRegistrationId}}</td>
+                        <td>{{creg.CourseId}}</td>
+                        <td>{{creg.StudentId}}</td>
+                        <td>{{creg.RegistrationTime}}</td>
+                        <td>
+                            <button class="btn btn-primary" ng-click="editRecords(creg.CourseRegistrationId,creg.CourseId,creg.StudentId,creg.RegistrationTime)">Edit</button>
+                        </td>
+                        <td>
+                            <button class="btn btn-danger" ng-click="delete(creg.CourseRegistrationId)">Delete</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

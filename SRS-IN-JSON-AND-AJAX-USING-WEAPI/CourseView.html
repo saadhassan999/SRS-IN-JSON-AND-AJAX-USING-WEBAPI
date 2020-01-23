@@ -1,0 +1,210 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Course Page</title>
+    <link href="Stylesheet/bootstrap.min.css" rel="stylesheet" />
+    <script src="Scripts/jquery.min.js"></script>
+    <script src="Scripts/angular.min.js"></script>
+    <script src="Scripts/bootstrap.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#myform').submit(function (e) {
+                e.preventDefault();
+                var cr_code = $('#c_code').val();
+                var regEx = /(^[a-zA-Z]{2}[\d]{4})$/;
+                var validCode = regEx.test(cr_code);
+                var cr_name = $('#crname').val();
+                var regEx = /^[a-zA-Z\s]+$/;
+                var validName = regEx.test(cr_name);
+                var cr_hrs = $('#crhrs').val();
+                var regEx = /(^[1-3])$/;
+                var validhrs = regEx.test(cr_hrs);
+                $(".error").remove();
+                if (cr_code.length < 1) {
+                    $('#c_code').after('<span class="error" style="color:red;">course code is required</span>');
+                } else if (!validCode) {
+                    $('#c_code').after('<span class="error" style="color:red;">format should be XXYYYY, where X is alphabet and Y is number</span>');
+                }
+                if (cr_name.length < 1) {
+                    $('#crname').after('<span class="error" style="color:red;">course name is  required</span>');
+                } else if (!validName) {
+                    $('#crname').after('<span class="error" style="color:red;">must start with alphabets</span>');
+                }
+                if (cr_hrs.length < 1) {
+                    $('#crhrs').after('<span class="error" style="color:red;">credit hours is  required</span>');
+                } else if (!validhrs) {
+                    $('#crhrs').after('<span class="error" style="color:red;">range should be 1 to 3 and it should be integer value</span>');
+                }
+
+
+            });
+        });
+        var crsApp = angular.module("courses", []);
+        crsApp.controller("saveCrses", function ($http, $scope) {
+            PopulateCourses();
+            function PopulateCourses() {
+                var pop_crs = $http({
+                    method: "get",
+                    url: "/api/Courses"
+                });
+                pop_crs.then(function (result) {
+                    $scope.crses = result.data;
+                }, function (error) {
+                        console.log(error);
+                    $scope.status = error;
+                    alert("failed to populate courses");
+                });
+            }
+            $scope.delete = function (crsId) {
+                var ans = confirm("are you sure to delete?");
+                if (ans) {
+                    var del_crs = $http({
+                        method: "delete",
+                        url: "/api/Courses/" + crsId
+                    });
+                    del_crs.then(function () {
+                        alert("deleted successfully");
+                        PopulateCourses();
+                    }, function () {
+                        alert("deleting process failed ");
+                    });
+                }
+            }
+            $scope.editRecords = function (crsId, crsCode, crsName, crsHrs) {
+                var get_crses = $http({
+                    method: "get",
+                    url: "/api/Courses/" + crsId
+                });
+                debugger;
+                get_crses.then(function () {
+                    $("#svebtn").hide();
+                    $("#updbtn").show();
+                    $scope.crscode = crsCode;
+                    $scope.crsname = crsName;
+                    $scope.crshrs = crsHrs;
+                    $scope.crssid = crsId;
+                    $("#myModal").modal("toggle");
+                }, function () {
+
+                });
+            }
+            $scope.updtfun = function (crsid) {
+                var crs_data = {
+                    CourseId: $scope.crssid,
+                    CourseCode: $scope.crscode,
+                    CourseName: $scope.crsname,
+                    CreditHours: $scope.crshrs
+                };
+                debugger;
+                var upd_crses = $http({
+                    method: "put",
+                    url: "/api/Courses/" + crsid,
+                    data: crs_data,
+                    contentType: "application/json;charset=utf-8"
+                });
+                upd_crses.then(function () {
+                    alert("update successfully");
+                    PopulateCourses();
+                    $("#myModal").modal("toggle");
+                    $("#svebtn").show();
+                    $("#updbtn").hide();
+                })
+            }
+            $scope.AddCourse = function () {
+                var crs_data = {
+                    CourseCode: $scope.crscode,
+                    CourseName: $scope.crsname,
+                    CreditHours: $scope.crshrs
+                };
+                //debugger;
+                //alert(JSON.stringify(crs_data));
+                var save_crs = $http({
+                    method: "post",
+                    url: "/api/Courses",
+                    data: crs_data,
+                    contentType: "application/json;charset=utf-8"
+                });
+                save_crs.then(function () {
+                    alert("successfully insert");
+                    //$scope.PopulateCourses();
+                }, function () {
+                    alert("failure occured while insert");
+                });
+            }
+        });
+    </script>
+</head>
+<body ng-app="courses" class="bg-info">
+    <nav class="navbar navbar-expand-xl bg-primary" style="height:70px;">
+        <a class="navbar-brand" href="StudentView.html" style="color:white; margin-left:100px;font-size:21px;margin-top:10px;">Student</a>
+        <a class="navbar-brand" href="CourseView.html" style="color:white; margin-left:20px;font-size:21px;margin-top:10px;">Course</a>
+        <a class="navbar-brand" href="CRregView.html" style="color:white; margin-left:20px;font-size:21px;margin-top:10px;">Course Registration</a>
+    </nav>
+    <div class="container" ng-controller="saveCrses">
+        <button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#myModal" style="margin-bottom:4px;">Add Course</button>
+        <div class="modal fade" id="myModal" role="dialog">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        <h4 class="modal-title">Add New Course</h4>
+                    </div>
+                    <form id="myform">
+                        <div class="modal-body">
+                            <div class="form-group" hidden>
+                                <label>Course ID</label>
+                                <input type="text" class="form-control" ng-model="crssid" id="crsid" placeholder="enter crs id" />
+                            </div>
+                            <div class="form-group">
+                                <label>Course Code</label>
+                                <input type="text" ng-model="crscode" class="form-control" id="c_code" placeholder="enter course code" />
+                            </div>
+                            <div class="form-group">
+                                <label>Course Name</label>
+                                <input type="text" ng-model="crsname" class="form-control" id="crname" placeholder="enter course name" />
+                            </div>
+                            <div class="form-group">
+                                <label>Credit Hours</label>
+                                <input type="text" ng-model="crshrs" class="form-control" id="crhrs" placeholder="enter credit hours" />
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" id="svebtn" class="btn btn-primary" ng-click="AddCourse()">Save</button>
+                            <button style="display:none;" id="updbtn" type="submit" class="btn btn-success" ng-click="updtfun(crssid)">Update</button>
+                            <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div>
+            <table class="table table-borderless table-striped">
+                <thead class="bg-primary">
+                    <tr>
+                        <th>Course Code</th>
+                        <th>Course Name</th>
+                        <th>Credit Hours</th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="crs in crses">
+                        <td hidden>{{crs.CourseId}}</td>
+                        <td>{{crs.CourseCode}}</td>
+                        <td>{{crs.CourseName}}</td>
+                        <td>{{crs.CreditHours}}</td>
+                        <td>
+                            <button class="btn btn-primary" ng-click="editRecords(crs.CourseId,crs.CourseCode,crs.CourseName,crs.CreditHours)">Edit</button>
+                        </td>
+                        <td>
+                            <button class="btn btn-danger" ng-click="delete(crs.CourseId)">Delete</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

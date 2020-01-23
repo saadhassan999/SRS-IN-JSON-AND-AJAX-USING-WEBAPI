@@ -1,0 +1,221 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Student Page</title>
+    <link href="Stylesheet/bootstrap.min.css" rel="stylesheet" />
+    <script src="Scripts/jquery.min.js"></script>
+    <script src="Scripts/jquery.validate.js"></script>
+    <script src="Scripts/bootstrap.js"></script>
+    <script>
+        $(document).ready(function () {
+            PopulateStudents();
+            $('#myform').submit(function (e) {
+                e.preventDefault();
+                var st_name = $('#stdname').val();
+                var regEx = /^[a-zA-Z\s]+$/;
+                var validName = regEx.test(st_name);
+
+                var st_regno = $('#stdreg').val();
+                var regEx = /(^[a-zA-Z]{3}[\d]{6})$/;
+                var validRegno = regEx.test(st_regno);
+
+                var st_sem = $('#stdsem').val();
+                var regEx = /(^[1-9]|1[0-6])$/;
+                var validSem = regEx.test(st_sem);
+                $(".error").remove();
+                if (st_name.length < 1) {
+                    $('#stdname').after('<span class="error" style="color:red;">name is required</span>');
+                } else if (!validName) {
+                    $('#stdname').after('<span class="error" style="color:red;">your name must start with alphabets</span>');
+                }
+                if (st_regno < 1) {
+                    $('#stdreg').after('<span class="error" style="color:red;">regno is  required</span>');
+                } else if (!validRegno) {
+                    $('#stdreg').after('<span class="error" style="color:red;">format should be XXXYYYYYY, where X is alphabet and Y is number</span>');
+                }
+                if (st_sem < 1) {
+                    $('#stdsem').after('<span class="error" style="color:red;">semester is  required</span>');
+                } else if (!validSem) {
+                    $('#stdsem').after('<span class="error" style="color:red;">range should be 1 to 16</span>');
+                }
+            });
+        });
+        function PopulateStudents() {
+            $.ajax({
+                type: "get",
+                url: "/api/Students",
+                success: function (result) {
+                    $('.stdTable').html("");
+                    for (r in result) {
+                        $('.stdTable').append('<tr><td>' + result[r].StudentName + '</td><td>' + result[r].StudentRegNo
+                            + '</td><td>' + result[r].StudentSemester + '</td><td>' + '<button type="button" class="btn btn-danger" onclick="DeleteStudent(' + result[r].StudentId + ')">Delete</button>'
+                            + '</td><td>' + '<button type="button" class="btn btn-primary" onclick="EditStudent(' + result[r].StudentId + ')">Edit</button>' + '</td></tr>');
+                    }
+                },
+                failure: function () {
+                    alert("failure occured");
+                },
+                error: function (result) {
+                    console.log(result);
+                    alert("error occured");
+                }
+            });
+        }
+        function AddStudent() {
+            var stdData = {
+                StudentName: $("#stdname").val(),
+                StudentRegNo: $("#stdreg").val(),
+                StudentSemester: $("#stdsem").val()
+            };
+            $.ajax({
+                type: "post",
+                url: "/api/Students",
+                data: JSON.stringify(stdData),
+                contentType: "application/json;charset=utf-8",
+                success: function () {
+                    alert("data saved");
+                    $("#myModal").hide();
+                    PopulateStudents();
+                },
+                failure: function (result) {
+                    alert(result.responseText);
+                },
+                error: function (result) {
+                    alert(result.responseText);
+                }
+            });
+        }
+        function DeleteStudent(stdId) {
+            var ans = confirm("are you sure to delete this record?");
+            if (ans) {
+                $.ajax({
+                    type: "delete",
+                    url: "/api/Students/" + stdId,
+                    success: function () {
+                        alert("record deleted");
+                        PopulateStudents();
+                    },
+                    failure: function (result) {
+                        alert(result.responseText);
+                    },
+                    error: function (result) {
+                        alert(result.responseText);
+                    }
+                });
+            }
+        }
+        function EditStudent(stdId) {
+            $.ajax({
+                type: "get",
+                url: "/api/Students/" + stdId,
+                success: function (result) {
+                    $("#svebtn").hide();
+                    $("#updbtn").show();
+                    //console.log(result.StudentId);
+                    $("#stdname").val(result.StudentName);
+                    $("#stdreg").val(result.StudentRegNo);
+                    $("#stdsem").val(result.StudentSemester);
+                    $("#stdid").val(result.StudentId);
+                    $("#myModal").modal("toggle");
+                }
+            });
+        }
+        function updtfun(stdid) {
+            //alert("function called");
+            var updData = {
+                StudentId: $("#stdid").val(),
+                StudentName: $("#stdname").val(),
+                StudentRegNo: $("#stdreg").val(),
+                StudentSemester: $("#stdsem").val()
+            };
+            //alert(JSON.stringify(updData));
+            $.ajax({
+                type: "put",
+                url: "/api/Students/" + stdid,
+                data: JSON.stringify(updData),
+                contentType: "application/json;charset=utf-8",
+                dataType: "json",
+                success: function () {
+                    alert("update successfully");
+                    PopulateStudents();
+                    $("#myModal").modal("toggle");
+                    $("#svebtn").show();
+                    $("#updbtn").hide();
+                    reset();
+                },
+                failure: function (result) {
+                    console.log(result);
+                },
+                error: function (result) {
+                    console.log(result);
+                }
+            });
+            function reset() {
+                $("#stdid").val("");
+                $("#stdname").val("");
+                $("#stdreg").val("");
+                $("#stdsem").val("");
+                $("#stdid").val("");
+            }
+        }
+    </script>
+</head>
+<body class="bg-info">
+    <nav class="navbar navbar-expand-xl bg-primary" style="height:70px;">
+        <a class="navbar-brand" href="StudentView.html" style="color:white; margin-left:100px;font-size:21px;margin-top:10px;">Student</a>
+        <a class="navbar-brand" href="CourseView.html" style="color:white; margin-left:20px;font-size:21px;margin-top:10px;">Course</a>
+        <a class="navbar-brand" href="CRregView.html" style="color:white; margin-left:20px;font-size:21px;margin-top:10px;">Course Registration</a>
+    </nav>
+    <div class="container">
+        <button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#myModal" style="margin-bottom:4px;">Add Student</button>
+        <div class="modal fade" id="myModal" role="dialog">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        <h4 class="modal-title">Add New Student</h4>
+                    </div>
+                    <form id="myform">
+                        <div class="modal-body">
+                            <div class="form-group" hidden>
+                                <label>Student ID</label>
+                                <input type="text" class="form-control" id="stdid" placeholder="enter student id" />
+                            </div>
+                            <div class="form-group">
+                                <label>Student Name</label>
+                                <input type="text" name="stname" class="form-control" id="stdname" placeholder="enter student name" />
+                            </div>
+                            <div class="form-group">
+                                <label>Student RegNo</label>
+                                <input type="text" name="stregno" class="form-control" id="stdreg" placeholder="enter student regno" />
+                            </div>
+                            <div class="form-group">
+                                <label>Student Semester</label>
+                                <input type="text" name="stsem" class="form-control" id="stdsem" placeholder="enter student semester" />
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" id="svebtn" class="btn btn-primary" onclick="AddStudent()">Save</button>
+                            <button style="display:none;" id="updbtn" type="submit" class="btn btn-success" onclick="updtfun(document.getElementById('stdid').value)">Update</button>
+                            <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <table class="table table-borderless table-striped">
+            <thead class="bg-primary">
+                <tr>
+                    <th>Student Name</th>
+                    <th>Student RegNo</th>
+                    <th>Student Semester</th>
+                    <th></th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody class="stdTable"></tbody>
+        </table>
+    </div>
+</body>
+</html>
